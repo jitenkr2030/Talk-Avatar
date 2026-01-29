@@ -14,19 +14,170 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  avatar          String?
+  plan            String   @default("free") // free, pro, enterprise
+  credits         Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  avatars         Avatar[]
+  sessions        Session[]
+  apiKeys         ApiKey[]
+  videos          Video[]
+  usageLogs       UsageLog[]
+  
+  @@map("users")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Avatar {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  imageUrl        String?
+  videoUrl        String?
+  modelUrl        String?
+  voiceId         String?
+  language        String   @default("en")
+  gender          String?  // male, female, neutral
+  ageRange        String?  // young, adult, senior
+  ethnicity       String?
+  personality     String?  // friendly, professional, casual, etc.
+  role            String?  // teacher, support, guide, etc.
+  isActive        Boolean  @default(true)
+  isPublic        Boolean  @default(false)
+  trainingStatus  String   @default("pending") // pending, training, ready, failed
+  accuracy        Float?   // 0-1 score for video-based avatars
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions        Session[]
+  videos          Video[]
+  
+  @@map("avatars")
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique
+  avatarId        String
+  userId          String
+  status          String   @default("active") // active, ended, error
+  startTime       DateTime @default(now())
+  endTime         DateTime?
+  duration        Int?     // in seconds
+  messageCount    Int      @default(0)
+  totalCost       Float    @default(0)
+  language        String   @default("en")
+  context         String?  // JSON string for conversation context
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  avatar          Avatar   @relation(fields: [avatarId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages        Message[]
+  
+  @@map("sessions")
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  sessionId       String
+  content         String
+  messageType     String   // user, assistant, system
+  audioUrl        String?
+  videoUrl        String?
+  emotion         String?  // detected or expressed emotion
+  confidence      Float?   // 0-1 confidence score
+  processingTime  Int?     // in milliseconds
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("messages")
+}
+
+model Video {
+  id              String   @id @default(cuid())
+  title           String
+  script          String
+  avatarId        String
+  userId          String
+  status          String   @default("pending") // pending, processing, ready, failed
+  videoUrl        String?
+  thumbnailUrl    String?
+  duration        Int?     // in seconds
+  resolution      String?  // 720p, 1080p, 4k
+  backgroundType  String   @default("solid") // solid, image, video
+  backgroundColor String   @default("#ffffff")
+  language        String   @default("en")
+  voiceSettings   String?  // JSON string for voice configuration
+  progress        Float    @default(0)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  avatar          Avatar   @relation(fields: [avatarId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("videos")
+}
+
+model ApiKey {
+  id              String   @id @default(cuid())
+  name            String
+  key             String   @unique
+  userId          String
+  permissions     String   @default("read") // read, write, admin
+  isActive        Boolean  @default(true)
+  lastUsed        DateTime?
+  usageCount      Int      @default(0)
+  rateLimit       Int      @default(1000) // requests per hour
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("api_keys")
+}
+
+model UsageLog {
+  id              String   @id @default(cuid())
+  userId          String
+  sessionId       String?
+  avatarId        String?
+  action          String   // create_avatar, session_minute, video_generation, etc.
+  units           Int      @default(1) // minutes, credits, etc.
+  cost            Float    @default(0)
+  metadata        String?  // JSON string for additional data
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("usage_logs")
+}
+
+model SystemConfig {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String
+  description     String?
+  category        String   @default("general")
+  isPublic        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("system_config")
 }
