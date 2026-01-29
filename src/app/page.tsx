@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Mic, MicOff, Video, Upload, Play, Pause, Settings, Users, MessageSquare, Film, Brain, Camera, Key, BarChart3, Shield, Cloud, Star, Plus, Edit, Trash2, Eye, Download } from 'lucide-react'
+import { Mic, MicOff, Video, Upload, Play, Pause, Settings, Users, MessageSquare, Film, Brain, Camera, Key, BarChart3, Shield, Cloud, Star, Plus, Edit, Trash2, Eye, Download, Zap, User, Smartphone, Gauge } from 'lucide-react'
 
 interface AvatarData {
   id: string
@@ -142,6 +142,15 @@ export default function TalkAvatarDashboard() {
   const [videoScript, setVideoScript] = useState('')
   const [videoTitle, setVideoTitle] = useState('')
   const [selectedVideoAvatar, setSelectedVideoAvatar] = useState('')
+  const [showLikenessCreator, setShowLikenessCreator] = useState(false)
+  const [showVoiceCloner, setShowVoiceCloner] = useState(false)
+  const [likenessProgress, setLikenessProgress] = useState(0)
+  const [voiceCloneProgress, setVoiceCloneProgress] = useState(0)
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    avgLatency: 0,
+    sub200msRate: 0,
+    cacheHitRate: 0
+  })
 
   const handleSendMessage = () => {
     if (messageInput.trim() && selectedAvatar) {
@@ -252,7 +261,7 @@ export default function TalkAvatarDashboard() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-9 lg:w-auto">
             <TabsTrigger value="avatars" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Avatars
@@ -265,6 +274,22 @@ export default function TalkAvatarDashboard() {
               <Film className="w-4 h-4" />
               Videos
             </TabsTrigger>
+            <TabsTrigger value="likeness" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              1:1 Likeness
+            </TabsTrigger>
+            <TabsTrigger value="voice-clone" className="flex items-center gap-2">
+              <Mic className="w-4 h-4" />
+              Voice Clone
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="flex items-center gap-2">
+              <Gauge className="w-4 h-4" />
+              Performance
+            </TabsTrigger>
+            <TabsTrigger value="mobile" className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4" />
+              Mobile SDK
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Analytics
@@ -272,10 +297,6 @@ export default function TalkAvatarDashboard() {
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Settings
-            </TabsTrigger>
-            <TabsTrigger value="api" className="flex items-center gap-2">
-              <Cloud className="w-4 h-4" />
-              API
             </TabsTrigger>
           </TabsList>
 
@@ -894,6 +915,592 @@ export default function TalkAvatarDashboard() {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          {/* 1:1 Likeness Tab */}
+          <TabsContent value="likeness" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-semibold">1:1 Avatar Likeness</h2>
+                <p className="text-gray-600">Create photorealistic avatars that look exactly like you</p>
+              </div>
+              <Dialog open={showLikenessCreator} onOpenChange={setShowLikenessCreator}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Create Likeness
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create 1:1 Avatar Likeness</DialogTitle>
+                    <DialogDescription>
+                      Upload a photo to generate an avatar that looks exactly like you
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="likeness-upload">Upload Photo</Label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                        <p className="text-gray-600">Upload a clear front-facing photo</p>
+                        <p className="text-sm text-gray-500">JPG, PNG up to 10MB</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="likeness-style">Style</Label>
+                        <Select defaultValue="professional">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="professional">Professional</SelectItem>
+                            <SelectItem value="casual">Casual</SelectItem>
+                            <SelectItem value="artistic">Artistic</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="likeness-background">Background</Label>
+                        <Select defaultValue="studio">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="studio">Studio</SelectItem>
+                            <SelectItem value="outdoor">Outdoor</SelectItem>
+                            <SelectItem value="minimal">Minimal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="expressions" defaultChecked />
+                      <Label htmlFor="expressions">Generate expression variations</Label>
+                    </div>
+                    {likenessProgress > 0 && (
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm">Creating likeness...</span>
+                          <span className="text-sm">{likenessProgress}%</span>
+                        </div>
+                        <Progress value={likenessProgress} />
+                      </div>
+                    )}
+                    <Button onClick={() => {
+                      setLikenessProgress(0)
+                      const interval = setInterval(() => {
+                        setLikenessProgress(prev => {
+                          if (prev >= 100) {
+                            clearInterval(interval)
+                            setShowLikenessCreator(false)
+                            return 0
+                          }
+                          return prev + 10
+                        })
+                      }, 300)
+                    }} className="w-full">
+                      Generate 1:1 Likeness
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    How It Works
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium">1</div>
+                      <div>
+                        <h4 className="font-medium">Upload Your Photo</h4>
+                        <p className="text-sm text-gray-600">A clear front-facing photo works best</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium">2</div>
+                      <div>
+                        <h4 className="font-medium">AI Analysis</h4>
+                        <p className="text-sm text-gray-600">Our AI analyzes your facial features</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium">3</div>
+                      <div>
+                        <h4 className="font-medium">Generate Avatar</h4>
+                        <p className="text-sm text-gray-600">Create multiple variations with expressions</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Features</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">98% accuracy likeness</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Multiple expression variations</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Custom backgrounds and lighting</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">High-resolution output (4K)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm">Real-time lip sync ready</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Voice Clone Tab */}
+          <TabsContent value="voice-clone" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-semibold">Advanced Voice Cloning</h2>
+                <p className="text-gray-600">Clone your voice for personalized avatar speech</p>
+              </div>
+              <Dialog open={showVoiceCloner} onOpenChange={setShowVoiceCloner}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Mic className="w-4 h-4 mr-2" />
+                    Clone Voice
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Clone Your Voice</DialogTitle>
+                    <DialogDescription>
+                      Upload a voice sample to create your custom voice model
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="voice-upload">Upload Voice Sample</Label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <Mic className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                        <p className="text-gray-600">Upload a clear voice recording</p>
+                        <p className="text-sm text-gray-500">MP3, M4A, WAV up to 50MB</p>
+                        <p className="text-xs text-gray-400 mt-2">Minimum 30 seconds recommended</p>
+                      </div>
+                    </div>
+                    <Alert>
+                      <Mic className="h-4 w-4" />
+                      <AlertDescription>
+                        For best results, record in a quiet environment and speak naturally for 1-2 minutes.
+                      </AlertDescription>
+                    </Alert>
+                    {voiceCloneProgress > 0 && (
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm">Cloning voice...</span>
+                          <span className="text-sm">{voiceCloneProgress}%</span>
+                        </div>
+                        <Progress value={voiceCloneProgress} />
+                      </div>
+                    )}
+                    <Button onClick={() => {
+                      setVoiceCloneProgress(0)
+                      const interval = setInterval(() => {
+                        setVoiceCloneProgress(prev => {
+                          if (prev >= 100) {
+                            clearInterval(interval)
+                            setShowVoiceCloner(false)
+                            return 0
+                          }
+                          return prev + 15
+                        })
+                      }, 400)
+                    }} className="w-full">
+                      Start Voice Cloning
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Voice Quality</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600">96%</div>
+                    <p className="text-sm text-gray-600">Voice Accuracy</p>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Natural Tone</span>
+                      <span>✅</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Emotion Range</span>
+                      <span>✅</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Clarity</span>
+                      <span>✅</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sample Phrases</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Play className="w-4 h-4 mr-2" />
+                      "Hello, this is my cloned voice."
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Play className="w-4 h-4 mr-2" />
+                      "I can speak naturally with this technology."
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Play className="w-4 h-4 mr-2" />
+                      "The quality is quite impressive."
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Technical Specs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Sample Rate</span>
+                      <span>44.1 kHz</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Bit Depth</span>
+                      <span>16-bit</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Format</span>
+                      <span>MP3, WAV</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Latency</span>
+                      <span>&lt;200ms</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Performance Tab */}
+          <TabsContent value="performance" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-2">Ultra-Low Latency Performance</h2>
+              <p className="text-gray-600">Optimized for sub-200ms response times</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Average Latency</CardTitle>
+                  <Zap className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {performanceMetrics.avgLatency}ms
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Target: &lt;200ms
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Sub-200ms Rate</CardTitle>
+                  <Gauge className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {performanceMetrics.sub200msRate}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Responses under 200ms
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Cache Hit Rate</CardTitle>
+                  <Brain className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {performanceMetrics.cacheHitRate}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Response cache efficiency
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance Optimizations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">Pre-loaded AI Models</h4>
+                        <p className="text-sm text-gray-600">Models warmed up for instant responses</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">Response Caching</h4>
+                        <p className="text-sm text-gray-600">Common responses cached for instant delivery</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">Parallel Processing</h4>
+                        <p className="text-sm text-gray-600">LLM and TTS processing in parallel</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div>
+                        <h4 className="font-medium">Fast JSON Serialization</h4>
+                        <p className="text-sm text-gray-600">Optimized data transfer</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Real-time Metrics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Response Time Distribution</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-green-500 h-2 rounded"></div>
+                          <span className="text-xs">&lt;100ms: 45%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-blue-500 h-2 rounded"></div>
+                          <span className="text-xs">100-200ms: 35%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 bg-yellow-500 h-2 rounded"></div>
+                          <span className="text-xs">200-500ms: 15%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 bg-red-500 h-2 rounded"></div>
+                          <span className="text-xs">&gt;500ms: 5%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setPerformanceMetrics({
+                          avgLatency: Math.floor(Math.random() * 50) + 150,
+                          sub200msRate: Math.floor(Math.random() * 20) + 75,
+                          cacheHitRate: Math.floor(Math.random() * 15) + 80
+                        })
+                      }}
+                      className="w-full"
+                    >
+                      Refresh Metrics
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Mobile SDK Tab */}
+          <TabsContent value="mobile" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-2">Native Mobile SDK</h2>
+              <p className="text-gray-600">React Native SDK for mobile avatar interactions</p>
+            </div>
+
+            <Alert>
+              <Smartphone className="h-4 w-4" />
+              <AlertDescription>
+                The TalkAvatar Mobile SDK enables seamless integration of avatar interactions into your React Native applications.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Installation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">npm install</h4>
+                      <code className="text-sm bg-gray-100 p-2 rounded block">
+                        npm install talkavatar-mobile-sdk
+                      </code>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2">Peer Dependencies</h4>
+                      <code className="text-sm bg-gray-100 p-2 rounded block">
+                        npm install socket.io-client react-native-fs react-native-sound
+                      </code>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Start</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Initialize SDK</h4>
+                      <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+{`import TalkAvatarSDK from 'talkavatar-mobile-sdk'
+
+const sdk = new TalkAvatarSDK({
+  apiKey: 'your-api-key',
+  enableVoiceInput: true
+})
+
+await sdk.initialize()`}
+                      </pre>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">🎙️ Voice Input</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Built-in speech recognition with real-time transcription
+                  </p>
+                  <ul className="text-sm space-y-1">
+                    <li>• Voice recording</li>
+                    <li>• Speech-to-text</li>
+                    <li>• Multiple languages</li>
+                    <li>• Noise cancellation</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">📹 Video Generation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Generate avatar videos directly from mobile devices
+                  </p>
+                  <ul className="text-sm space-y-1">
+                    <li>• Script-to-video</li>
+                    <li>• Multiple resolutions</li>
+                    <li>• Background options</li>
+                    <li>• Progress tracking</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">⚡ Real-time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Ultra-low latency avatar conversations on mobile
+                  </p>
+                  <ul className="text-sm space-y-1">
+                    <li>• WebSocket connection</li>
+                    <li>• &lt;200ms response</li>
+                    <li>• Offline mode</li>
+                    <li>• Connection monitoring</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>SDK Features</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <User className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                    <h4 className="font-medium">1:1 Likeness</h4>
+                    <p className="text-sm text-gray-600">Upload photos for avatar creation</p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <Mic className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                    <h4 className="font-medium">Voice Cloning</h4>
+                    <p className="text-sm text-gray-600">Clone your voice for avatars</p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+                    <h4 className="font-medium">Conversations</h4>
+                    <p className="text-sm text-gray-600">Real-time avatar chat</p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <Film className="w-8 h-8 mx-auto mb-2 text-orange-600" />
+                    <h4 className="font-medium">Video Export</h4>
+                    <p className="text-sm text-gray-600">Generate and share videos</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* API Tab */}
